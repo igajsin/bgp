@@ -2,6 +2,8 @@
   (require 'cl-ppcre))
 
 (defun print-meminfo (meminfo)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+	   (type hash-table meminfo))
   (let* ((mem-total (gethash "MemTotal" meminfo))
 	 (mem-free (gethash "MemFree" meminfo))
 	 (buffers (gethash "Buffers" meminfo))
@@ -10,22 +12,33 @@
     (format t "RAM ~1,2f% ~1,2fmb~%" percent-free (/ free-ram 1024.0))))
 
 (defun ready-p (meminfo)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+	   (type hash-table meminfo))
   (and (> (gethash "MemTotal" meminfo) 0)
        (> (gethash "MemFree" meminfo) 0)
        (> (gethash "Buffers" meminfo) 0)))
   
 
 (defun update (meminfo name value)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (type fixnum value)
+	   (type hash-table meminfo))
   (when (gethash name meminfo) (setf (gethash name meminfo) value))
   meminfo)
 
 (defun analize (line meminfo)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+	   (type hash-table meminfo)
+	   )
   (let ((mem (cl-ppcre::register-groups-bind (name (#'parse-integer value))
 	     ("([\\w,(,)]+):\\s+(\\d+).*$" line)
 	       (update meminfo name value))))
     mem))
 
 (defun read-file (stream meminfo)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+	   (type hash-table meminfo)
+	   (type SB-SYS:FD-STREAM stream))
   (let ((line (read-line stream nil 'eof)))
     (if (eq line 'eof) meminfo
 	(let ((new-meminfo (analize line meminfo)))
@@ -33,6 +46,7 @@
 	      (read-file stream new-meminfo))))))
 
 (defun test ()
+  (declare (optimize (speed 3) (safety 0) (debug 0)))
   (with-open-file (stream "/proc/meminfo")
     (let ((meminfo (make-hash-table :test 'equal :size 3)))
       (setf (gethash "MemTotal" meminfo) 0)

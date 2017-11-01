@@ -1,6 +1,13 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (require 'cl-ppcre))
 
+(defvar *scan* (cl-ppcre:create-scanner "([\\w,(,)]+):\\s+(\\d+).*$"))
+
+(defun add-value (hash key value)
+  (setf (gethash key hash) value)
+  (setf (gethash "Ready" hash)
+	(1+ (or (gethash "Ready" hash) 0))))
+
 (defun print-meminfo (meminfo)
   (let* ((mem-total (gethash "MemTotal" meminfo))
 	 (mem-free (gethash "MemFree" meminfo))
@@ -10,18 +17,17 @@
     (format t "RAM ~1,2f% ~1,2fmb~%" percent-free (/ free-ram 1024.0))))
 
 (defun ready-p (meminfo)
-  (and (> (gethash "MemTotal" meminfo) 0)
-       (> (gethash "MemFree" meminfo) 0)
-       (> (gethash "Buffers" meminfo) 0)))
+  (= 3 (gethash "Ready" meminfo)))
   
 
 (defun update (meminfo name value)
-  (when (gethash name meminfo) (setf (gethash name meminfo) value))
+  (when (gethash name meminfo)
+    (add-value meminfo name value))
   meminfo)
 
 (defun analize (line meminfo)
   (let ((mem (cl-ppcre::register-groups-bind (name (#'parse-integer value))
-	     ("([\\w,(,)]+):\\s+(\\d+).*$" line)
+	     (*scan* line)
 	       (update meminfo name value))))
     mem))
 
@@ -35,9 +41,10 @@
 (defun test ()
   (with-open-file (stream "/proc/meminfo")
     (let ((meminfo (make-hash-table :test 'equal :size 3)))
-      (setf (gethash "MemTotal" meminfo) 0)
-      (setf (gethash "MemFree" meminfo) 0)
-      (setf (gethash "Buffers" meminfo) 0)
+      (add-value meminfo "MemTotal" 0)
+      (add-value meminfo "MemFree" 0)
+      (add-value meminfo "Buffers" 0)
+      (add-value meminfo "Ready" 0)
       (print-meminfo (read-file stream meminfo)))))
 
 (defun main (argv)

@@ -1,0 +1,11 @@
+#!/var/guix/profiles/per-user/ugoday/guix-profile/bin/guile \
+-e main -s
+-*- scheme -*-
+!#
+
+
+(define (main args)
+  (let* ((src (cadr (command-line)))
+	 (dst (car (string-split src #\.)))
+	 (cmd (format #f "buildapp --load ~a --entry main --output ~a --load-system cl-ppcre" src dst)))
+    (system cmd)))

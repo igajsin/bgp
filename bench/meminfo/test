@@ -1,0 +1,48 @@
+#!/var/guix/profiles/per-user/ugoday/guix-profile/bin/guile \
+-e main -s
+-*- scheme -*-
+!#
+
+(define shell '("shell/mem1.sh" "shell/mem1a.sh" "shell/mem2.sh"))
+(define shell1 '("shell/mem2.sh"))
+
+(define python '("python/mem6.py"))
+
+(define guile '("guile/mem4.scm" "guile/mem4a.scm" "guile/mem4b.scm" "guile/mem5.scm"))
+(define guile1 '("guile/mem4a.scm"))
+
+(define lisp '("lisp/mem5" "lisp/mem5a" "lisp/mem5b" "lisp/mem5c"))
+(define lisp1 '("lisp/mem5b"))
+
+(define ocaml '("ocaml/mem7"))
+
+(define (usage)
+  (format #t "USAGE: either test -h or test -n Num shell python ..."))
+
+(define (do-test num case)
+  (map (lambda (script)
+	 (display script)
+	 (system (format #f "time ~a ~a > /dev/null" script num))
+	 (newline))
+       case))
+
+(define (tests num cases)
+  (map (lambda (x)
+	 (cond
+	  ((string= x "shell") (do-test num shell))
+	  ((string= x "shell1") (do-test num shell1))
+	  ((string= x "python") (do-test num python))
+	  ((string= x "guile") (do-test num guile))
+	  ((string= x "guile1") (do-test num guile1))
+	  ((string= x "lisp") (do-test num lisp))
+	  ((string= x "lisp1") (do-test num lisp1))
+	  ((string= x "ocaml") (do-test num ocaml))))
+       cases))
+
+(define (main args)
+  "args should be like -h or -n Num shell python ..."
+  (let ((key (cadr args)))
+    (if (or (string= key "-h") (not (string= key "-n"))) (usage)
+	(let ((num (string->number (caddr args)))
+	      (cases (cdddr args)))
+	  (tests num cases)))))
